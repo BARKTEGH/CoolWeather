@@ -2,7 +2,9 @@ package com.coolweather.android;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +19,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.coolweather.android.db.ChoosedCounty;
 import com.coolweather.android.db.City;
 import com.coolweather.android.db.County;
 import com.coolweather.android.db.Province;
@@ -36,6 +37,7 @@ import okhttp3.Response;
 
 public class ChooseAreaFragment extends Fragment {
 
+    private SharedPreferences prefs;
     public static final int LEVEL_PROVINCE = 0;
     public static final int LEVEL_CITY = 1;
     public static final int LEVEL_COUNTY = 2;
@@ -74,6 +76,7 @@ public class ChooseAreaFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
         View view = inflater.inflate(R.layout.choose_area, container, false);
         titleText = (TextView)view.findViewById(R.id.title_text);
         backButton = (Button) view.findViewById(R.id.back_button);
@@ -99,11 +102,11 @@ public class ChooseAreaFragment extends Fragment {
                 }else if (currentLevel== LEVEL_COUNTY){
                     String countyName = countyList.get(position).getCountyName();
                     Intent intent = new Intent(getActivity(), WeatherActivity.class);
-                    intent.putExtra("county_name",countyName);
                     //保存添加的城市
-                    ChoosedCounty choosedCounty = new ChoosedCounty();
-                    choosedCounty.setCountyName(countyName);
-                    choosedCounty.save();
+                    Utility.saveChoosedCounty(countyName);
+                    SharedPreferences.Editor edit = prefs.edit();
+                    edit.putString("curCounty", countyName);
+                    edit.apply();
                     startActivity(intent);
                     getActivity().finish();
 

@@ -7,7 +7,10 @@ import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.ArraySet;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -21,12 +24,14 @@ import com.coolweather.android.util.BDLocationUtil;
 import org.litepal.crud.DataSupport;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.litepal.LitePalApplication.getContext;
 
 public class CountyChoosedActivity extends AppCompatActivity {
 
+    private SharedPreferences prefs;
     private Button addCountyButton;
     private ListView listView;
     private Button locationCityButton;
@@ -38,6 +43,8 @@ public class CountyChoosedActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_county_choosed);
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         queryChoosedCountyList();
         addCountyButton = (Button) findViewById(R.id.add_county_button);
         listView = (ListView) findViewById(R.id.county_list_choosed_view);
@@ -54,8 +61,10 @@ public class CountyChoosedActivity extends AppCompatActivity {
         locationCityButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                SharedPreferences.Editor edit = prefs.edit();
+                edit.putString("curCounty", finalLocationCityName);
+                edit.apply();
                 Intent intent = new Intent(CountyChoosedActivity.this, WeatherActivity.class);
-                intent.putExtra("county_name", finalLocationCityName);
                 startActivity(intent);
                 finish();
             }
@@ -77,8 +86,10 @@ public class CountyChoosedActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String s = countyList.get(position);
+                SharedPreferences.Editor edit = prefs.edit();
+                edit.putString("curCounty", s);
+                edit.apply();
                 Intent intent = new Intent(getContext(), WeatherActivity.class);
-                intent.putExtra("county_name",s);
                 startActivity(intent);
                 finish();
             }
@@ -90,14 +101,13 @@ public class CountyChoosedActivity extends AppCompatActivity {
 
     private void queryChoosedCountyList(){
         countyListDB = DataSupport.findAll(ChoosedCounty.class);
+        HashSet<String> set = new HashSet<>();
         System.out.println(countyListDB.size());
-            for (ChoosedCounty county:countyListDB){
-                countyList.add(county.getCountyName());
-            }
-//        }
+        for (ChoosedCounty county:countyListDB){
+            set.add(county.getCountyName());
+        }
+        countyList.addAll(set);
     }
-
-
 
 
 }

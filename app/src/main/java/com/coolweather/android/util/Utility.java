@@ -3,6 +3,7 @@ package com.coolweather.android.util;
 import android.text.TextUtils;
 
 import com.baidu.location.LocationClient;
+import com.coolweather.android.db.ChoosedCounty;
 import com.coolweather.android.db.City;
 import com.coolweather.android.db.County;
 import com.coolweather.android.db.Province;
@@ -12,8 +13,10 @@ import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.litepal.crud.DataSupport;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Utility {
@@ -128,6 +131,18 @@ public class Utility {
         return myMap.get(type);
     }
 
+
+    public static void saveChoosedCounty(String countyName){
+        //去重
+        List<ChoosedCounty> all = DataSupport.findAll(ChoosedCounty.class);
+        for (ChoosedCounty county: all){
+            if (countyName.equals(county.getCountyName())){
+                return;
+            }
+        }
+        ChoosedCounty county = new ChoosedCounty(countyName);
+        county.save();
+    }
 
 }
 

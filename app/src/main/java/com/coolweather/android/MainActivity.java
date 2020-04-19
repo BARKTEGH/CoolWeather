@@ -19,7 +19,9 @@ import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.mapapi.SDKInitializer;
+import com.coolweather.android.db.ChoosedCounty;
 import com.coolweather.android.util.BDLocationUtil;
+import com.coolweather.android.util.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,17 +32,19 @@ public class MainActivity extends AppCompatActivity {
     private LocationClient locationClient;
 
 
-
-        @Override
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (prefs.getString("weather",null)!=null) {
+            String countyName = prefs.getString("weatherCityName", "北京");
+            SharedPreferences.Editor edit = prefs.edit();
+            edit.putString("curCounty", countyName);
+            edit.apply();
+            Utility.saveChoosedCounty(countyName);
             Intent intent = new Intent(this, WeatherActivity.class);
-            intent.putExtra("county_name",prefs.getString("weatherCityName", "北京"));
             startActivity(intent);
             finish();
         } else {
@@ -61,8 +65,11 @@ public class MainActivity extends AppCompatActivity {
                         district = "北京";
                     }
                     locationClient.stop();
+                    Utility.saveChoosedCounty(district);
+                    SharedPreferences.Editor edit = prefs.edit();
+                    edit.putString("curCounty", district);
+                    edit.apply();
                     Intent intent = new Intent(MainActivity.this, WeatherActivity.class);
-                    intent.putExtra("county_name", district);
                     startActivity(intent);
                     finish();
                 }
