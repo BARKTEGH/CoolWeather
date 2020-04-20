@@ -77,6 +77,14 @@ public class WeatherActivity extends AppCompatActivity {
     //城市对应的位置
     private HashMap<String, Integer> countyIndex = new HashMap<>();
 
+    //更新一个页面
+    private int UPDATE_ONE_PAGE = 0;
+    //更新所有页面
+    private int UPDATE_ALL_PAGE = 1;
+    //更新标记，用来切换下拉刷新更新一个页面 和 减少页面更新所有页面来去除缓存
+    private int updateStatu = UPDATE_ONE_PAGE;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,15 +141,21 @@ public class WeatherActivity extends AppCompatActivity {
 
             @Override
             public int getItemPosition(@NonNull Object object) {
-                //更新其中一个页面
-                View view = (View) object;
-                int currentPagerIdx = viewPager.getCurrentItem();
-                if (currentPagerIdx == (Integer) view.getTag()) {
-                    return POSITION_NONE;
-                } else {
-                    return POSITION_UNCHANGED;
+                if (updateStatu == UPDATE_ONE_PAGE){
+                    //更新其中一个页面
+                    View view = (View) object;
+                    int currentPagerIdx = viewPager.getCurrentItem();
+                    if (currentPagerIdx == (Integer) view.getTag()) {
+                        return POSITION_NONE;
+                    } else {
+                        return POSITION_UNCHANGED;
+                    }
                 }
-
+//                else if (updateStatu == UPDATE_ALL_PAGE){
+//                    //更新所有页面，目的为去除缓存
+//                    return POSITION_NONE;
+//                }
+                return POSITION_NONE;
             }
 
             @Override
@@ -151,7 +165,7 @@ public class WeatherActivity extends AppCompatActivity {
 
             @Override
             public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
-                container.removeView(pageList.get(position));
+                container.removeView((View) object);
             }
 
             @NonNull
@@ -160,13 +174,14 @@ public class WeatherActivity extends AppCompatActivity {
                 container.addView(pageList.get(position));
                 return pageList.get(position);
             }
+
+
         };
         viewPager.setAdapter(adapter);
         //侦测当前页面位置
         viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
             }
 
             @Override
@@ -183,6 +198,7 @@ public class WeatherActivity extends AppCompatActivity {
         curCountyName = prefs.getString("curCounty",choosedCountyList.get(0));
         position = getPositionFromName(curCountyName, choosedCountyList);
         viewPager.setCurrentItem(position);
+        viewPager.setOffscreenPageLimit(8);
 
     }
 
@@ -217,35 +233,26 @@ public class WeatherActivity extends AppCompatActivity {
         List<String> curList = initChoosedCounties();
         //当前变化
         if (!equalList(curList, choosedCountyList)){
-            //保存以前的视图，部分没改变可以不用修改
-            ArrayList<View> prePageList = new ArrayList<>(pageList);
-
-            pageList = new ArrayList<>();
             LayoutInflater layoutInflater = getLayoutInflater();
+            pageList.clear();
             for (int i=0; i< curList.size();i++){
-                String county = curList.get(i);
-                int prePosition = getPositionFromName(county, choosedCountyList);
-                if (prePosition != -1){
-                    //城市没有删减，只需重新设置tag，保证下拉刷新找到对应页面
-                    View view = prePageList.get(prePosition);
-                    view.setTag(i);
-                    pageList.add(i,view);
-                }else {
-                    //以前的没有，新增的城市，新增页面
-                    View view = layoutInflater.inflate(R.layout.weather_layout, null);
-                    view.setTag(i);
-                    String countyName = curList.get(i);
-                    fillView(view, countyName,true);
-                    pageList.add(view);
-                }
+                //以前的没有，新增的城市，新增页面
+                View view = layoutInflater.inflate(R.layout.weather_layout, null);
+                view.setTag(i);
+                String countyName = curList.get(i);
+                fillView(view, countyName,false);
+                pageList.add(i, view);
             }
+            updateStatu = UPDATE_ALL_PAGE;
             adapter.notifyDataSetChanged();
+
         }
 
-        curCountyName = prefs.getString("curCounty",curList.get(0));
+        choosedCountyList = curList;
+        curCountyName = prefs.getString("curCounty", curList.get(0));
         position = getPositionFromName(curCountyName, curList);
         viewPager.setCurrentItem(position);
-        viewPager.setOffscreenPageLimit(8);
+
     }
 
 
@@ -401,6 +408,7 @@ public class WeatherActivity extends AppCompatActivity {
      * 更新当前页天气
      */
     private void updatePageView(){
+        updateStatu = UPDATE_ONE_PAGE;
         View view = pageList.get(position);
         String countyName = choosedCountyList.get(position);
         fillView(view, countyName, true);

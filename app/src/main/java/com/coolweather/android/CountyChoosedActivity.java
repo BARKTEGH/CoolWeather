@@ -1,22 +1,26 @@
 package com.coolweather.android;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.ArraySet;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.coolweather.android.db.ChoosedCounty;
 import com.coolweather.android.util.BDLocationUtil;
@@ -31,6 +35,7 @@ import static org.litepal.LitePalApplication.getContext;
 
 public class CountyChoosedActivity extends AppCompatActivity {
 
+    private static final String TAG = "CountyChoosedActivity";
     private SharedPreferences prefs;
     private Button addCountyButton;
     private ListView listView;
@@ -57,6 +62,7 @@ public class CountyChoosedActivity extends AppCompatActivity {
         }else {
             locationCityButton.setText(locationCityName+"--定位");
         }
+        Log.i(TAG, "onCreate: "+ locationCityName);
         final String finalLocationCityName = locationCityName;
         locationCityButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -94,19 +100,54 @@ public class CountyChoosedActivity extends AppCompatActivity {
                 finish();
             }
         });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                //定义AlertDialog.Builder对象，当长按列表项的时候弹出确认删除对话框
+                AlertDialog.Builder builder=new AlertDialog.Builder(CountyChoosedActivity.this);
+                builder.setMessage("确定删除?");
+                builder.setTitle("提示");
 
+                //添加AlertDialog.Builder对象的setPositiveButton()方法
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String countyName= countyList.get(position);
+                        if(countyList.remove(position)!=null){
+                            DataSupport.deleteAll(ChoosedCounty.class,
+                                    "countyName = ?", countyName);
+                            System.out.println("success");
+                        }else {
+                            System.out.println("failed");
+                        }
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(getBaseContext(), "删除列表项", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
+                //添加AlertDialog.Builder对象的setNegativeButton()方法
+                builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                });
+
+                AlertDialog alertDialog = builder.create();
+                alertDialog.setCanceledOnTouchOutside(false);
+                alertDialog.show();
+                return true;
+
+            }
+        });
 
     }
 
     private void queryChoosedCountyList(){
         countyListDB = DataSupport.findAll(ChoosedCounty.class);
-        HashSet<String> set = new HashSet<>();
-        System.out.println(countyListDB.size());
         for (ChoosedCounty county:countyListDB){
-            set.add(county.getCountyName());
+            countyList.add(county.getCountyName());
         }
-        countyList.addAll(set);
     }
 
 
