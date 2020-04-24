@@ -27,7 +27,7 @@
 
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
-            android:value="${BAIDU_APPKEY_VALUE}"  />
+            android:value="S8cIhrxgNnsps4n45Kg5qIVl8LFmbjl2" />
 
         <activity android:name=".ChooseAreaActivity" />
         <activity android:name=".CountyChoosedActivity" />
