@@ -22,8 +22,13 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
 import com.coolweather.android.db.ChoosedCounty;
 import com.coolweather.android.util.BDLocationUtil;
+import com.coolweather.android.util.Utility;
 
 import org.litepal.crud.DataSupport;
 
@@ -44,6 +49,8 @@ public class CountyChoosedActivity extends AppCompatActivity {
     private List<String> countyList = new ArrayList<>();
     private List<ChoosedCounty> countyListDB = new ArrayList<>();
 
+    private LocationClient locationClient;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,26 +62,7 @@ public class CountyChoosedActivity extends AppCompatActivity {
         listView = (ListView) findViewById(R.id.county_list_choosed_view);
         locationCityButton = (Button) findViewById(R.id.location_city_button);
 
-        String locationCityName = BDLocationUtil.getLocationDistrict(getApplicationContext());
-        if (locationCityName == null){
-            locationCityName = "北京";
-            locationCityButton.setText(locationCityName+ "--重置位置");
-        }else {
-            locationCityButton.setText(locationCityName+"--定位");
-        }
-        Log.i(TAG, "onCreate: "+ locationCityName);
-        final String finalLocationCityName = locationCityName;
-        locationCityButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SharedPreferences.Editor edit = prefs.edit();
-                edit.putString("curCounty", finalLocationCityName);
-                edit.apply();
-                Intent intent = new Intent(CountyChoosedActivity.this, WeatherActivity.class);
-                startActivity(intent);
-                finish();
-            }
-        });
+        startLocation();
 
         addCountyButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -142,6 +130,49 @@ public class CountyChoosedActivity extends AppCompatActivity {
         });
 
     }
+
+    private void startLocation(){
+        locationClient = new LocationClient(getApplicationContext());
+        locationClient.registerLocationListener(new BDLocationListener() {
+            @Override
+            public void onReceiveLocation(final BDLocation location) {
+                String district = location.getDistrict();
+                if (district == null){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(CountyChoosedActivity.this,
+                                    "无法获取定位，重置定位为北京",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    district = "北京";
+                    locationCityButton.setText( district+"--重新定位");
+                }else {
+                    locationCityButton.setText( district+"--定位");
+                }
+                locationClient.stop();
+                final String finalDistrict = district;
+                locationCityButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        SharedPreferences.Editor edit = prefs.edit();
+                        Utility.saveChoosedCounty(finalDistrict);
+                        edit.putString("curCounty", finalDistrict);
+                        edit.apply();
+                        Intent intent = new Intent(CountyChoosedActivity.this, WeatherActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                });
+            }
+        });
+        LocationClientOption option = new LocationClientOption();
+        option.setIsNeedAddress(true);
+        locationClient.setLocOption(option);
+        locationClient.start();
+    }
+
 
     private void queryChoosedCountyList(){
         countyListDB = DataSupport.findAll(ChoosedCounty.class);

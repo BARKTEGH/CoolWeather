@@ -17,8 +17,6 @@
                 android:layout_height="wrap_content"
                 android:fitsSystemWindows="true">
 
-                <include layout="@layout/title" />
-
                 <include layout="@layout/now" />
 
                 <include layout="@layout/forecast" />

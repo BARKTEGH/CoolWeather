@@ -60,6 +60,9 @@ public class WeatherActivity extends AppCompatActivity {
 
     private PocketSwipeRefreshLayout swipeRefreshLayout;
     private ImageView bingPIcImg;
+    private Button navButton;
+    private TextView titleCityText;
+    private LinearLayout dotLayout;
 
     private SharedPreferences prefs;
 
@@ -67,6 +70,7 @@ public class WeatherActivity extends AppCompatActivity {
     private PagerAdapter adapter;
     //保存每个页面view
     private ArrayList<View> pageList = new ArrayList<>();
+    private List<ImageView> dotImageList = new ArrayList<>();
     //当前页索引
     private int position;
     //当前显示的城市
@@ -98,8 +102,29 @@ public class WeatherActivity extends AppCompatActivity {
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
         setContentView(R.layout.activity_weather);
+        //数据初始化-- 将传入的数据赋值到对应的位置
+        choosedCountyList = initChoosedCounties();
         prefs = PreferenceManager.getDefaultSharedPreferences
                 (this);
+        curCountyName = prefs.getString("curCounty",choosedCountyList.get(0));
+        position = getPositionFromName(curCountyName, choosedCountyList);
+
+        //圆点来显示当前页面的位置
+        dotLayout = (LinearLayout) findViewById(R.id.dot_layout);
+        for (int i = 0; i < choosedCountyList.size(); i++) {
+            ImageView imageView = new ImageView(WeatherActivity.this);
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(30, 30));
+            imageView.setPadding(20, 0, 20, 0);
+            if (i == position) {
+                // 默认选中第一张图片
+                imageView.setBackgroundResource(R.drawable.dot_focused);
+            } else {
+                imageView.setBackgroundResource(R.drawable.dot_normal);
+            }
+            dotImageList.add(imageView);
+            dotLayout.addView(imageView);
+        }
+
 
         //下拉刷新
         swipeRefreshLayout = (PocketSwipeRefreshLayout) findViewById(R.id.swipe_refresh);
@@ -121,8 +146,20 @@ public class WeatherActivity extends AppCompatActivity {
         }else {
             loadBingPIc();
         }
+        //添加按钮
+        navButton = (Button) findViewById(R.id.nav_button);
+        navButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(WeatherActivity.this,
+                        CountyChoosedActivity.class);
+                startActivity(intent);
+            }
+        });
 
-        choosedCountyList = initChoosedCounties();
+        titleCityText = (TextView) findViewById(R.id.title_city);
+        titleCityText.setText(curCountyName);
+
         //初始化pager，每个页面都是一个城市的天气
         viewPager = (ViewPager) findViewById(R.id.weather_pager);
         LayoutInflater layoutInflater = getLayoutInflater();
@@ -151,10 +188,10 @@ public class WeatherActivity extends AppCompatActivity {
                         return POSITION_UNCHANGED;
                     }
                 }
-//                else if (updateStatu == UPDATE_ALL_PAGE){
-//                    //更新所有页面，目的为去除缓存
-//                    return POSITION_NONE;
-//                }
+                else if (updateStatu == UPDATE_ALL_PAGE){
+                    //更新所有页面，目的为去除缓存
+                    return POSITION_NONE;
+                }
                 return POSITION_NONE;
             }
 
@@ -174,8 +211,6 @@ public class WeatherActivity extends AppCompatActivity {
                 container.addView(pageList.get(position));
                 return pageList.get(position);
             }
-
-
         };
         viewPager.setAdapter(adapter);
         //侦测当前页面位置
@@ -187,6 +222,12 @@ public class WeatherActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 WeatherActivity.this.position = position;
+                curCountyName = choosedCountyList.get(position);
+                titleCityText.setText(curCountyName);
+                for (int i=0;i<dotImageList.size(); i++){
+                    dotImageList.get(i).setBackgroundResource(R.drawable.dot_normal);
+                }
+                dotImageList.get(position).setBackgroundResource(R.drawable.dot_focused);
             }
 
             @Override
@@ -195,8 +236,6 @@ public class WeatherActivity extends AppCompatActivity {
             }
         });
 
-        curCountyName = prefs.getString("curCounty",choosedCountyList.get(0));
-        position = getPositionFromName(curCountyName, choosedCountyList);
         viewPager.setCurrentItem(position);
         viewPager.setOffscreenPageLimit(8);
 
@@ -231,6 +270,19 @@ public class WeatherActivity extends AppCompatActivity {
         super.onRestart();
         //当前选择的城市列表
         List<String> curList = initChoosedCounties();
+        curCountyName = prefs.getString("curCounty", curList.get(0));
+        position = getPositionFromName(curCountyName, curList);
+        //改变圆点位置
+        dotImageList.clear();
+        dotLayout.removeAllViews();
+        for (int i = 0; i < curList.size(); i++) {
+            ImageView imageView = new ImageView(WeatherActivity.this);
+            imageView.setLayoutParams(new ViewGroup.LayoutParams(30, 30));
+            imageView.setPadding(20, 0, 20, 0);
+            dotImageList.add(imageView);
+            dotLayout.addView(imageView);
+        }
+
         //当前变化
         if (!equalList(curList, choosedCountyList)){
             LayoutInflater layoutInflater = getLayoutInflater();
@@ -247,14 +299,10 @@ public class WeatherActivity extends AppCompatActivity {
             adapter.notifyDataSetChanged();
 
         }
-
+        //一定要在选择页面前更新城市列表，不然增加城市时onPageSelected出现超过索引的问题
         choosedCountyList = curList;
-        curCountyName = prefs.getString("curCounty", curList.get(0));
-        position = getPositionFromName(curCountyName, curList);
         viewPager.setCurrentItem(position);
-
     }
-
 
     private List<String> initChoosedCounties(){
         List<ChoosedCounty> all = DataSupport.findAll(ChoosedCounty.class);
@@ -350,30 +398,16 @@ public class WeatherActivity extends AppCompatActivity {
                 }
             }
         });
-        //添加按钮
-        Button navButton = (Button) view.findViewById(R.id.nav_button);
-        navButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(WeatherActivity.this,
-                        CountyChoosedActivity.class);
-                startActivity(intent);
-            }
-        });
-        TextView titleCity = (TextView) view.findViewById(R.id.title_city);
-        TextView titleUpdateTime = (TextView) view.findViewById(R.id.title_update_time);
+        TextView updateTimeText = (TextView) view.findViewById(R.id.update_time);
         TextView degreeText = (TextView) view.findViewById(R.id.degree_text);
         TextView weatherInfoText = (TextView) view.findViewById(R.id.weather_info_text);
         LinearLayout forecastLayout = (LinearLayout) view.findViewById(R.id.forecast_layout);
         LinearLayout lifestyleLayout  = (LinearLayout) view.findViewById(R.id.lifestyle_layout);
-
-        String cityName = weather.basic.location;
-        String updateTime = weather.update.loc.split(" ")[1];
+        String updateTime = weather.update.loc;
         String degree = weather.now.tmp+"℃";
         String weatherInfo = weather.now.cond_txt;
         //填充内容
-        titleCity.setText(cityName);
-        titleUpdateTime.setText(updateTime);
+        updateTimeText.setText(updateTime);
         degreeText.setText(degree);
         weatherInfoText.setText(weatherInfo);
         forecastLayout.removeAllViews();
