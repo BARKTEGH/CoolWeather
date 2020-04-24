@@ -17,7 +17,11 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            manifestPlaceholders = [BAIDU_APPKEY_VALUE: BaiduKey]
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            manifestPlaceholders = [BAIDU_APPKEY_VALUE: BaiduKey]
         }
     }
 

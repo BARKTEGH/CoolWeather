@@ -58,7 +58,7 @@ public class AutoUpdateService extends Service {
     private void updateWeather(final String name){
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherUrl =  "https://free-api.heweather.net/s6/weather/?location="
-                +name+"&key=a8f7289cd0d044529f56932856345b60";
+                +name+"&key="+Utility.getProperties(getApplicationContext(), "hefengKEY");
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {

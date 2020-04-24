@@ -1,8 +1,7 @@
 package com.coolweather.android.util;
 
+import android.content.Context;
 import android.text.TextUtils;
-
-import com.baidu.location.LocationClient;
 import com.coolweather.android.db.ChoosedCounty;
 import com.coolweather.android.db.City;
 import com.coolweather.android.db.County;
@@ -15,9 +14,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.litepal.crud.DataSupport;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class Utility {
 
@@ -142,6 +143,23 @@ public class Utility {
         }
         ChoosedCounty county = new ChoosedCounty(countyName);
         county.save();
+    }
+
+    public static String getProperties(Context c, String key){
+        Properties props = new Properties();
+        try {
+            //方法一：通过activity中的context攻取setting.properties的FileInputStream
+            //注意这地方的参数appConfig在eclipse中应该是appConfig.properties才对,但在studio中不用写后缀
+            //InputStream in = c.getAssets().open("appConfig.properties");
+            InputStream in = c.getAssets().open("config");
+            //方法二：通过class获取setting.properties的FileInputStream
+            //InputStream in = PropertiesUtill.class.getResourceAsStream("/assets/  setting.properties "));
+            props.load(in);
+        } catch (Exception e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        return props.getProperty(key);
     }
 
 }
